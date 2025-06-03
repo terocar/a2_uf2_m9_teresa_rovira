@@ -1,5 +1,3 @@
-```markdown
-
 # Ubuntu Dev Container with GUI Access
 
 Contenedor Docker con Ubuntu 24.04 que incluye:
