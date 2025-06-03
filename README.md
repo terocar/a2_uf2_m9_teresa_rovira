@@ -160,4 +160,19 @@ ubuntu-dev-env
 
 3. El flag `--disable-gpu-sandbox` es necesario para VSCode en entornos virtualizados sin soporte completo de sandboxing de GPU.
 
+4. La primera construcción puede tardar 15-20 minutos
+
+5. Para mejor rendimiento gráfico, usar calidad de color 24-bit en el cliente VNC
+
+6. Los archivos de código pueden mapearse usando volúmenes Docker (recomendado para desarrollo real)
+
+```bash
+docker run -d \
+  --name dev-box \
+  -p 5901:5901 \
+  -p 2222:22 \
+  -v $(pwd)/code:/home/devuser/code \
+  ubuntu-dev-env
+```
+
 ```
