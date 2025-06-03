@@ -24,7 +24,7 @@ Contenedor Docker con Ubuntu 24.04 que incluye:
 
 ```bash
 
-docker build -t ubuntu-dev-env -f Dockerfile-dev-env .
+docker build -t ubuntu-dev-env -f dockerfile .
 
 ```
 
