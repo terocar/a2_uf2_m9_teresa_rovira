@@ -1,13 +1,12 @@
-# Dev Environment: Ubuntu 24.04 with XFCE, VNC, VSCode, Python & SSH
+# Dockerfile for Ubuntu 24.04 amb XFCE, VNC, VSCode, Python, i SSH
 FROM ubuntu:24.04
 
-# Set noninteractive mode
-ENV DEBIAN_FRONTEND=noninteractive \
-    VNC_PASS=devpass \
-    USER=devuser
+# Variables d'entorn
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Base system setup
+# Update i instal·lacions bàsiques
 RUN apt-get update && apt-get install -y \
+    apt-utils \
     software-properties-common \
     wget \
     curl \
@@ -16,60 +15,92 @@ RUN apt-get update && apt-get install -y \
     net-tools \
     iputils-ping \
     nano \
-    openssh-server \
-    && rm -rf /var/lib/apt/lists/*
+    openssh-server
 
-# XFCE Desktop and VNC
-RUN apt-get update && apt-get install -y \
+# XFCE i VNC server
+RUN apt-get install -y \
     xfce4 \
-    xfce4-terminal \
-    xfce4-taskmanager \
+    xfce4-goodies \
     tightvncserver \
     x11vnc \
     xvfb \
-    xterm \
-    dbus-x11 \
-    libgl1-mesa-glx \
-    x11-apps \
-    && apt-get clean
+    xterm
 
-# Install VSCode (method changed)
-RUN wget -qO vscode.deb "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64" \
-    && apt-get install -y ./vscode.deb \
-    && rm vscode.deb
-
-# Python toolchain
+# XFCE, VNC server, i dependencies
 RUN apt-get update && apt-get install -y \
-    python3-full \
+    dbus-x11 \
+    libglx-mesa0 \
+    mesa-utils \
+    xdg-utils \
+    x11-xserver-utils \
+    x11-utils \
+    xserver-xorg-core \
+    xorgxrdp \
+    xauth \
+    xinit \
+    x11-apps \
+    dbus-x11
+# Visual Studio Code
+RUN wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg && \
+    install -o root -g root -m 644 packages.microsoft.gpg /usr/share/keyrings/ && \
+    sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list' && \
+    apt-get update && \
+    apt-get install -y code
+
+# Python i development tools
+RUN apt-get install -y \
+    python3 \
     python3-pip \
     python3-venv \
-    build-essential \
-    && python3 -m pip install --upgrade pip
+    python3-dev \
+    build-essential
 
-# SSH Configuration
-RUN mkdir /var/run/sshd \
-    && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config \
-    && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+#Actualització
+RUN apt-get update && apt-get install -y \
+    dbus-x11 \
+    libgl1 \
+    xdg-utils \
+    x11-xserver-utils
 
-# Create non-root user
-RUN useradd -m -s /bin/bash $USER \
-    && echo "$USER:devpass" | chpasswd \
-    && usermod -aG sudo $USER \
-    && echo "$USER ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+RUN apt-get install -y dbus-x11
 
-# Container setup script
+# Configurar SSH
+RUN mkdir /var/run/sshd && \
+    echo 'root:password' | chpasswd && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+# Neteja
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Afegeixo el startup script
 COPY container-init.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/container-init.sh
 
-# VNC setup
-USER $USER
-WORKDIR /home/$USER
-RUN mkdir -p .vnc \
-    && echo "$VNC_PASS" | vncpasswd -f > .vnc/secret \
-    && chmod 600 .vnc/secret \
-    && echo '#!/bin/sh\nunset SESSION_MANAGER\nstartxfce4 &' > .vnc/launch.sh \
-    && chmod +x .vnc/launch.sh
-
+# Exposo els ports necessaris
 EXPOSE 5901 22
+
+# creo usuari developer
+RUN useradd -m -s /bin/bash developer && \
+    echo 'developer:developer' | chpasswd && \
+    usermod -aG sudo developer
+
+# faig servir l'usuari developer
+USER developer
+WORKDIR /home/developer
+
+# VNC password
+RUN mkdir -p ~/.vnc && \
+    echo "password" | vncpasswd -f > ~/.vnc/passwd && \
+    chmod 600 ~/.vnc/passwd
+
+# XFCE startup script
+RUN echo '#!/bin/sh\nstartxfce4 &' > ~/.vnc/xstartup && \
+    chmod +x ~/.vnc/xstartup
+
+# Torno a l'usuari root per a l'entrypoint
 USER root
+
+# Set entrypoint
 ENTRYPOINT ["/usr/local/bin/container-init.sh"]

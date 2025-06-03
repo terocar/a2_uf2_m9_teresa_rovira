@@ -1,11 +1,19 @@
 #!/bin/bash
 
-# Start essential services
+# Inicio SSH server
 service ssh start
+
+# Inicio D-Bus system daemon
+mkdir -p /var/run/dbus
 dbus-daemon --system --fork
 
-# VNC server startup
-su - devuser -c "vncserver :1 -geometry 1280x720 -depth 24 -localhost no -SecurityTypes None -xstartup /home/devuser/.vnc/launch.sh"
+# Inicio VNC server amb l'usuari developer
+su - developer -c "vncserver :1 -geometry 1280x800 -depth 24"
 
-# Keep container alive
+# Per mantenir el contenidor funcionant
 tail -f /dev/null
+
+if ! command -v dbus-launch &> /dev/null; then
+    echo "Error: dbus-launch not found. Ensure dbus-x11 is installed." >&2
+    exit 1
+fi
