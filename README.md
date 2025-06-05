@@ -92,10 +92,10 @@ docker ps -a
 
 ```
 repo/
-├── Dockerfile-dev-env          # Dockerfile principal
+├── dockerfile                  # Dockerfile principal
 ├── container-init.sh           # Script de inicio del contenedor
 ├── README.md                   # Este archivo
-└── (opcional) otros archivos de configuración
+
 ```
 
 ## Notas importantes
